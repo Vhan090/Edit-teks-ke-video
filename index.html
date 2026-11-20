@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10131c">
+  <title>World Clock — Time, everywhere</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #10131c;
+      color: #f2f4fb;
+      font-synthesis: none;
+      --muted: #9299ac;
+      --line: rgba(255, 255, 255, .09);
+      --panel: #191d29;
+      --accent: #9c8cff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      background: radial-gradient(ellipse at 50% -15%, #292541 0, #151824 40%, #10131c 72%);
+    }
+    main { width: min(1040px, calc(100% - 40px)); margin: 0 auto; padding: 58px 0 64px; }
+    .topline { display: flex; align-items: center; gap: 10px; color: #c3bbff; font-size: .75rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+    .globe { display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid rgba(156,140,255,.35); border-radius: 50%; font-size: 1rem; }
+    h1 { margin: 20px 0 8px; font-size: clamp(2.2rem, 6vw, 3.8rem); line-height: 1.05; letter-spacing: -.055em; }
+    .intro { margin: 0; color: var(--muted); font-size: 1rem; }
+    .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 38px 0 16px; }
+    .section-label { color: #c5cada; font-size: .82rem; font-weight: 650; }
+    .live { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: .76rem; }
+    .live::before { width: 7px; height: 7px; border-radius: 50%; background: #70e0a1; box-shadow: 0 0 12px #70e0a1; content: ""; }
+    .clock-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); gap: 14px; }
+    .clock-card { position: relative; min-height: 184px; padding: 23px 24px 20px; overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: linear-gradient(145deg, rgba(31,35,49,.97), rgba(24,27,39,.94)); box-shadow: 0 12px 30px rgba(0,0,0,.12); }
+    .clock-card::after { position: absolute; top: -56px; right: -40px; width: 145px; height: 145px; border: 1px solid rgba(156,140,255,.08); border-radius: 50%; box-shadow: 0 0 0 20px rgba(156,140,255,.025), 0 0 0 42px rgba(156,140,255,.02); content: ""; pointer-events: none; }
+    .card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .city { margin: 0; font-size: 1.03rem; font-weight: 650; }
+    .zone { margin-top: 5px; color: var(--muted); font-size: .75rem; }
+    .offset { flex: 0 0 auto; padding: 5px 8px; border: 1px solid var(--line); border-radius: 7px; color: #b6accf; font-size: .7rem; }
+    .time { margin-top: 23px; font-variant-numeric: tabular-nums; font-size: clamp(2rem, 5vw, 2.55rem); font-weight: 550; letter-spacing: -.055em; line-height: 1; white-space: nowrap; }
+    .time small { margin-left: 5px; color: #b9aaff; font-size: .76rem; font-weight: 650; letter-spacing: .02em; }
+    .date { margin-top: 10px; color: #a4aabc; font-size: .78rem; }
+    .remove { position: absolute; right: 18px; bottom: 15px; z-index: 1; padding: 5px 7px; border: 0; border-radius: 6px; background: transparent; color: #858ca0; font: inherit; font-size: .7rem; cursor: pointer; }
+    .remove:hover { background: rgba(255,255,255,.07); color: #fff; }
+    .empty { grid-column: 1 / -1; padding: 34px 20px; border: 1px dashed var(--line); border-radius: 14px; color: var(--muted); text-align: center; }
+    .add-row { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+    select, .add-button { min-height: 42px; border: 1px solid var(--line); border-radius: 9px; background: #191d29; color: #e8eaf2; font: inherit; font-size: .84rem; }
+    select { width: min(330px, 100%); padding: 0 36px 0 12px; }
+    .add-button { padding: 0 15px; border-color: rgba(156,140,255,.35); background: rgba(156,140,255,.13); color: #d3cbff; font-weight: 650; cursor: pointer; }
+    .add-button:hover { background: rgba(156,140,255,.22); }
+    select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    footer { display: flex; justify-content: space-between; gap: 12px; margin-top: 44px; padding-top: 17px; border-top: 1px solid var(--line); color: #747b8e; font-size: .72rem; }
+    @media (max-width: 520px) { main { width: min(100% - 28px, 1040px); padding-top: 36px; } .toolbar { margin-top: 30px; } .clock-card { min-height: 170px; padding: 20px; } footer { flex-direction: column; } }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="topline"><span class="globe" aria-hidden="true">◉</span> Your time, everywhere</div>
+    <h1>World clock</h1>
+    <p class="intro">A little perspective on what time it is around the world.</p>
+
+    <div class="toolbar">
+      <span class="section-label">Your time zones</span>
+      <span class="live">Live · updates every second</span>
+    </div>
+    <section id="clocks" class="clock-grid" aria-label="Current time in selected time zones" aria-live="polite"></section>
+
+    <form class="add-row" id="add-form">
+      <label for="zone-select" class="section-label" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0">Choose a time zone to add</label>
+      <select id="zone-select" aria-label="Choose a time zone to add"></select>
+      <button class="add-button" type="submit">＋ Add time zone</button>
+    </form>
+    <footer><span>Time zones are based on your device’s clock.</span><span id="local-note"></span></footer>
+  </main>
+  <script>
+    (() => {
+      const clocks = document.querySelector('#clocks');
+      const select = document.querySelector('#zone-select');
+      const form = document.querySelector('#add-form');
+      const localZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+      const initialZones = [localZone, 'America/New_York', 'Europe/London', 'Asia/Tokyo', 'Australia/Sydney'];
+      const zones = [...new Set(initialZones)];
+      const fallbackZones = ['Africa/Cairo','America/Chicago','America/Los_Angeles','America/Sao_Paulo','Asia/Dubai','Asia/Kolkata','Asia/Shanghai','Europe/Berlin','Europe/Paris','Pacific/Auckland','UTC'];
+      const availableZones = typeof Intl.supportedValuesOf === 'function'
+        ? Intl.supportedValuesOf('timeZone')
+        : fallbackZones;
+      const cityName = zone => zone === 'UTC' ? 'Coordinated Universal Time' : zone.split('/').pop().replace(/_/g, ' ');
+      const formatters = new Map();
+      const getFormatter = (zone, options) => {
+        const key = zone + JSON.stringify(options);
+        if (!formatters.has(key)) formatters.set(key, new Intl.DateTimeFormat(undefined, { timeZone: zone, ...options }));
+        return formatters.get(key);
+      };
+      const offsetFor = (zone, now) => {
+        const part = getFormatter(zone, { timeZoneName: 'shortOffset' }).formatToParts(now).find(item => item.type === 'timeZoneName');
+        return (part?.value || '').replace('GMT', 'UTC');
+      };
+      const render = () => {
+        const now = new Date();
+        clocks.replaceChildren();
+        if (!zones.length) {
+          const empty = document.createElement('div');
+          empty.className = 'empty';
+          empty.textContent = 'No time zones yet. Add one to get started.';
+          clocks.append(empty);
+        }
+        zones.forEach(zone => {
+          const card = document.createElement('article');
+          card.className = 'clock-card';
+          const head = document.createElement('div');
+          head.className = 'card-head';
+          const location = document.createElement('div');
+          const city = document.createElement('h2');
+          city.className = 'city';
+          city.textContent = zone === localZone ? `${cityName(zone)} · Local` : cityName(zone);
+          const label = document.createElement('div');
+          label.className = 'zone';
+          label.textContent = zone.replace(/_/g, ' ');
+          location.append(city, label);
+          const offset = document.createElement('span');
+          offset.className = 'offset';
+          offset.textContent = offsetFor(zone, now);
+          head.append(location, offset);
+          const time = document.createElement('div');
+          time.className = 'time';
+          time.setAttribute('aria-label', getFormatter(zone, { hour: 'numeric', minute: '2-digit', second: '2-digit' }).format(now));
+          const digits = document.createElement('span');
+          digits.textContent = getFormatter(zone, { hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).format(now);
+          time.append(digits);
+          const period = getFormatter(zone, { hour: 'numeric', hour12: true }).formatToParts(now).find(part => part.type === 'dayPeriod');
+          if (period) {
+            const marker = document.createElement('small');
+            marker.textContent = period.value;
+            time.append(marker);
+          }
+          const date = document.createElement('div');
+          date.className = 'date';
+          date.textContent = getFormatter(zone, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).format(now);
+          card.append(head, time, date);
+          if (zone !== localZone) {
+            const remove = document.createElement('button');
+            remove.className = 'remove';
+            remove.type = 'button';
+            remove.textContent = 'Remove';
+            remove.setAttribute('aria-label', `Remove ${cityName(zone)} time zone`);
+            remove.addEventListener('click', () => { zones.splice(zones.indexOf(zone), 1); render(); });
+            card.append(remove);
+          }
+          clocks.append(card);
+        });
+        document.querySelector('#local-note').textContent = `Local zone: ${localZone}`;
+        updateOptions();
+      };
+      const updateOptions = () => {
+        const current = select.value;
+        select.replaceChildren();
+        const choices = availableZones.filter(zone => !zones.includes(zone));
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = choices.length ? 'Select a time zone…' : 'All time zones added';
+        select.append(placeholder);
+        choices.forEach(zone => {
+          const option = document.createElement('option');
+          option.value = zone;
+          option.textContent = `${cityName(zone)} — ${zone}`;
+          select.append(option);
+        });
+        if (choices.includes(current)) select.value = current;
+        select.disabled = choices.length === 0;
+      };
+      form.addEventListener('submit', event => {
+        event.preventDefault();
+        if (select.value && !zones.includes(select.value)) {
+          zones.push(select.value);
+          render();
+          select.focus();
+        }
+      });
+      render();
+      window.setInterval(render, 1000);
+    })();
+  </script>
+</body>
+</html>
